@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using TMPro;
 using UnityEngine;
@@ -5,7 +6,9 @@ using UnityEngine.InputSystem;
 
 public class Counter : MonoBehaviour
 {
-    [SerializeField] private TextMeshProUGUI _text;
+    public event Action<int> CounterChanged;
+
+    [SerializeField] private InputReader _inputReader;
 
     private float _delay = 0.5f;
     private int _counter = 0;
@@ -13,26 +16,29 @@ public class Counter : MonoBehaviour
 
     private Coroutine _coroutine;
 
-    private void Start()
+
+    private void OnEnable()
     {
-        _text.text = string.Empty;
+        _inputReader.MouseClicked += SwitchState;
     }
 
-    private void Update()
+    private void OnDisable()
     {
-        if (Mouse.current.leftButton.wasPressedThisFrame)
+        _inputReader.MouseClicked += SwitchState;
+    }
+
+    private void SwitchState()
+    {
+        if (_isActive)
         {
-            if (_isActive)
-            {
-                _isActive = false;
-                StopCoroutine(_coroutine);
-            }
-            else
-            {
-                _isActive = true;
-                _coroutine = StartCoroutine(CounterRoutine(_delay));
-            }
-        }       
+            _isActive = false;
+            StopCoroutine(_coroutine);
+        }
+        else
+        {
+            _isActive = true;
+            _coroutine = StartCoroutine(CounterRoutine(_delay));
+        }
     }
 
     private IEnumerator CounterRoutine(float delay)
@@ -41,12 +47,7 @@ public class Counter : MonoBehaviour
         {
             yield return new WaitForSeconds(delay);
             _counter++;
-            DisplayCounter(_counter);
+            CounterChanged?.Invoke(_counter);
         }
-    }
-
-    private void DisplayCounter(int counter)
-    {
-        _text.text = counter.ToString();
     }
 }
